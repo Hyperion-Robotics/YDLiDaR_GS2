@@ -153,7 +153,7 @@ Protocol Format:
    |              |        |  bytes after the header is removed    |
    +--------------+--------+---------------------------------------+
 
-ATENTION:
+ATTENTION:
     1)
     During command interaction with GS2, except for the stop scan command, other commands
     cannot be interacted in scan mode, which may easily lead to message parsing errors
@@ -258,7 +258,7 @@ DATA ANALYSIS:
 ## License
 MIT License
 
-Copyright (c) 2024 GEORGE PAPAMICHAIL
+Copyright (c) 2024 HYPERION ROBOTICS
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
