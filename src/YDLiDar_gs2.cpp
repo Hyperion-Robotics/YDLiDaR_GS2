@@ -255,8 +255,6 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     }else{
         setNumberofLiDars(number_of_lidars);
     }
-    Serial.print("devicec connected");
-    Serial.println(number_of_lidars);
     
     setThecoefficients();
     
@@ -439,9 +437,7 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     //distance and angle correction
     getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &measure.angle, &measure.distance, dev_address);
 
-    if(measure.distance < 25 || measure.distance > 300){
-        return iter_Measurement();
-    }
+    
 
     measure.quality = (captured[i+1] >> 1);
     
@@ -466,6 +462,12 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
             measure.valid = false;
         }
     }
+
+    if(measure.distance < 25 || measure.distance > 300){
+        return iter_Measurement();
+    }
+    
+    measure.valid = true;
 
     S_measurement[device] = (S_measurement[device] + 1)%SCANS_PER_CYCLE;
     return iter_Measurement();
@@ -567,7 +569,6 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
         if(scan.distance[n] < 25 || scan.distance[n] > 300){
             scan.distance[n] = 0;
             scan.valid[n] = false;
-            continue;
         }
         scan.quality[n] = (captured[i+1] >> 1);
 
@@ -581,7 +582,7 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                 angle_q6_checkbit = (((uint16_t)(scan.angle[n] * 64)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
             }
         }
-
+        scan.valid[n] = true;
         if(n < 80){
             if(angle_q6_checkbit <= 23041){
                 scan.distance[n] = 0;
@@ -593,6 +594,11 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                 scan.valid[n] = false;
             }
         }
+
+        // if((scan.distance[n] < 25 || scan.distance[n] > 300) && scan.valid[n] == true){
+        //     scan.distance[n] = 0;
+        //     scan.valid[n] = false;
+        // }
     }
     return scan;
 }
