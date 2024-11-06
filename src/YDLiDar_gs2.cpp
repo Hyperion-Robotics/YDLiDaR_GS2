@@ -565,7 +565,9 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
         getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &scan.angle[n], &scan.distance[n], dev_address);
 
         if(scan.distance[n] < 25 || scan.distance[n] > 300){
-            return iter_Scan();
+            scan.distance[n] = 0;
+            scan.valid[n] = false;
+            continue;
         }
         scan.quality[n] = (captured[i+1] >> 1);
 
