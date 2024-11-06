@@ -133,7 +133,7 @@ The library provides specific error codes for debugging:
 - User Manual: https://www.ydlidar.com/dowfile.html?cid=11&type=2
 - Development Manual: https://www.ydlidar.com/dowfile.html?cid=11&type=3
 
-### Inforamtion
+### Information
 ```
 Protocol Format:
    +--------------+--------+---------------------------------------+
