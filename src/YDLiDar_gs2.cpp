@@ -439,6 +439,10 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     //distance and angle correction
     getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &measure.angle, &measure.distance, dev_address);
 
+    if(measure.distance < 25 || measure.distance > 300){
+        return iter_Measurement();
+    }
+
     measure.quality = (captured[i+1] >> 1);
     
     //filter for incorect captures
@@ -560,6 +564,9 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
         //distance and angle correction
         getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &scan.angle[n], &scan.distance[n], dev_address);
 
+        if(scan.distance[n] < 25 || scan.distance[n] > 300){
+            return iter_Scan();
+        }
         scan.quality[n] = (captured[i+1] >> 1);
 
         //filter for incorect captures
