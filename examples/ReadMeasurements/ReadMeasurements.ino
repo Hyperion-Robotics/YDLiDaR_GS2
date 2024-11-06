@@ -22,7 +22,7 @@ void loop() {
     iter_Scan scan = lidar.iter_scans();//get multiple measurments
     Serial.println();
     for(int i=0;i<160; i++){
-      if(!scan.valid){//check
+      if(!scan.valid[i]){//check
         continue;
       }
       Serial.printf("DIST: %i mm, Angle: %f, quality: %i, env: %i\n", i, scan.distance[i], scan.angle[i], scan.quality[i], scan.env);
