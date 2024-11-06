@@ -1,0 +1,37 @@
+# Syntax highlighting for QuickESPNow library
+
+# Class and Methods
+YDLiDar_GS2                KEYWORD1
+initialize                 KEYWORD1
+setBaudrate                KEYWORD1
+setedgeMode                KEYWORD1
+setNumberofLiDars          KEYWORD1
+verifyNumberOfDevices      KEYWORD1
+startScanning              KEYWORD1
+stopScanning               KEYWORD1
+iter_measurments           KEYWORD1
+iter_scans                 KEYWORD1
+getParametes               KEYWORD1
+getVersion                 KEYWORD1
+getNumberOfDevices         KEYWORD1
+softRestart                KEYWORD1
+
+# Constants and Data Types
+GS_LIDAR_GLOBAL_ADDRESS    KEYWORD2
+GS_LIDAR_ADDRESS_1         KEYWORD2
+GS_LIDAR_ADDRESS_2         KEYWORD2
+GS_LIDAR_ADDRESS_3         KEYWORD2
+GS_LIDAR_BAUDRATE_230400   KEYWORD2
+GS_LIDAR_BAUDRATE_512000   KEYWORD2
+GS_LIDAR_BAUDRATE_921600   KEYWORD2
+GS_LIDAR_BAUDRATE_1500000  KEYWORD2
+GS_STANDARD_EDGE_MODE      KEYWORD2
+GS_FACE_UP_ENDGE_MODE      KEYWORD2
+GS_FACE_DOWN_MODE          KEYWORD2
+GS_READ_EDGE_MODE          KEYWORD2
+iter_Measurement           KEYWORD2
+iter_Scan                  KEYWORD2
+
+
+# Predefined or Advanced Structures
+GS_error               KEYWORD3
