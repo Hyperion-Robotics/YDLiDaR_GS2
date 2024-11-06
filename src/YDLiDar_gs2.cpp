@@ -432,6 +432,8 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
 
     measure.env = MSB_LSBtoUINT16(captured[0], captured[1]);
 
+    measure.valid = true;
+
     uint16_t angle_q6_checkbit;
 
     //distance and angle correction
@@ -440,7 +442,7 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     
 
     measure.quality = (captured[i+1] >> 1);
-    
+
     //filter for incorect captures
     if(measure.angle < 0){
         angle_q6_checkbit = (((uint16_t)(measure.angle * 64 + 23040)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
@@ -466,8 +468,8 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     if(measure.distance < 25 || measure.distance > 300){
         return iter_Measurement();
     }
+
     
-    measure.valid = true;
 
     S_measurement[device] = (S_measurement[device] + 1)%SCANS_PER_CYCLE;
     return iter_Measurement();
@@ -562,14 +564,11 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
         int n = (i/2 - 1);
         
         uint16_t angle_q6_checkbit;
-
+        scan.valid[n] = true;
         //distance and angle correction
         getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &scan.angle[n], &scan.distance[n], dev_address);
 
-        if(scan.distance[n] < 25 || scan.distance[n] > 300){
-            scan.distance[n] = 0;
-            scan.valid[n] = false;
-        }
+
         scan.quality[n] = (captured[i+1] >> 1);
 
         //filter for incorect captures
@@ -582,7 +581,7 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                 angle_q6_checkbit = (((uint16_t)(scan.angle[n] * 64)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
             }
         }
-        scan.valid[n] = true;
+        
         if(n < 80){
             if(angle_q6_checkbit <= 23041){
                 scan.distance[n] = 0;
@@ -595,10 +594,10 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
             }
         }
 
-        // if((scan.distance[n] < 25 || scan.distance[n] > 300) && scan.valid[n] == true){
-        //     scan.distance[n] = 0;
-        //     scan.valid[n] = false;
-        // }
+        if((scan.distance[n] < 25 || scan.distance[n] > 300) && scan.valid[n] == true){
+            scan.distance[n] = 0;
+            scan.valid[n] = false;
+        }
     }
     return scan;
 }
