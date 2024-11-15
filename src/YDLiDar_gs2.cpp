@@ -122,7 +122,6 @@ void YDLiDar_GS2::getMeasurements(uint16_t dist, int n, double *dstTheta, uint16
 void YDLiDar_GS2::setThecoefficients(){
     clear_input();//reassures that the buffer is empty and that that the serial has started
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_GET_PARAMETERS);
-
     fixBuffer();
     
     //wait until the buffer gets all the bytes responce 
@@ -213,7 +212,7 @@ inline void YDLiDar_GS2::open_buffer() const{
     YDSerial->begin(baudrate);
 }
 
-void YDLiDar_GS2::stopScanningFORCE() const{
+void YDLiDar_GS2::stopScanningFORCE(){
     //send to all possible baud rates to stop scanning
     for(const auto& pair : baudrates){
         close_buffer();
