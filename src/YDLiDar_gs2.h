@@ -104,7 +104,7 @@ private:
     /**
      * @brief   Sends to every baudrate that the lidar can read the stop scanning command
      */
-    void stopScanningFORCE() const;
+    void stopScanningFORCE();
 public:
     /**
      * @brief   Constructor
