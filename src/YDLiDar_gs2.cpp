@@ -236,6 +236,8 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     //reassures that the lidar does not scan
     stopScanningFORCE();
 
+    stopScanningFORCE();
+
     int set_baudrate_to = baudrate;//save the wanted baudrate
 
     //set the baud rate to 921600
@@ -267,6 +269,7 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
         return GS_NOT_OK;
     }
         
+    delay(200);
     
     if(setThecoefficients() != GS_OK){
         return GS_NOT_OK;
