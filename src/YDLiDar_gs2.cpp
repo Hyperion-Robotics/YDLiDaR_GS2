@@ -357,37 +357,38 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     bool successful_capture = false;
     //ensures that the starting bytes are correct
     open_buffer();
+    long start = millis();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
             uint8_t currentByte = YDSerial->read();
-            switch (recv_pos){
+                        switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         pos = -1;
                         continue;
                     }
@@ -409,12 +410,14 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
                     break;
             }
             if(recv_pos == 7){
-                successful_capture = true;
                 break;
             }
             recv_pos++;
         }else{
             pos--;
+            if(millis() - start > 1000){
+                return iter_Measurement();
+            }
         }
     }
     if (!successful_capture){
@@ -489,7 +492,7 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     return iter_Measurement();
 }
 
- iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
+iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     int recv_pos = 0;
     bool successful_capture = false;
 
@@ -502,48 +505,48 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
                         switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         pos = -1;
                         continue;
                     }
                     break;
                 case 5:
                     if(currentByte != GS_LIDAR_CMD_SCAN){
-                        return iter_Measurement();
+                        return iter_Scan();
                     }
                     break;
                 case 6:
                     if(currentByte != 0x42){
-                        return iter_Measurement();
+                        return iter_Scan();
                     }
                     break;
                 case 7:
                     if(currentByte != 0x01){
-                        return iter_Measurement();
+                        return iter_Scan();
                     }
                     break;
             }
