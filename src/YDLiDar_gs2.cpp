@@ -366,31 +366,31 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
                         switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         pos = -1;
                         continue;
                     }
@@ -503,31 +503,31 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                         switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = -1;
+                        recv_pos = 0;
                         pos = -1;
                         continue;
                     }
