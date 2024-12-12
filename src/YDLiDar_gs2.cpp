@@ -119,13 +119,18 @@ void YDLiDar_GS2::getMeasurements(uint16_t dist, int n, double *dstTheta, uint16
     *dstDist = Dist;
 }
 
-void YDLiDar_GS2::setThecoefficients(){
+GS_error YDLiDar_GS2::setThecoefficients(){
     clear_input();//reassures that the buffer is empty and that that the serial has started
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_GET_PARAMETERS);
     fixBuffer();
     
     //wait until the buffer gets all the bytes responce 
-    while(YDSerial->available() < GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH){
+    long start = millis();
+    while((YDSerial->available() < GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH) && (millis() - start < 3000)){
+    }
+    
+    if(YDSerial->available() < GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH){
+        return GS_NOT_OK;
     }
 
     uint8_t captured[GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH];//store the message
@@ -134,7 +139,7 @@ void YDLiDar_GS2::setThecoefficients(){
 
     for(int i = 0; i < 4; i++){
         if(captured[i] != GS_LIDAR_HEADER_BYTE){
-            return;
+            return GS_NOT_OK;
         }
     }
     for(int i = 0; i<number_of_lidars; i++){
@@ -154,6 +159,7 @@ void YDLiDar_GS2::setThecoefficients(){
         d_compensateB1_aray[i] = ((double)MSB_LSBtoUINT16(b1_MSB, b1_LSB))/10000.0f;
         bias_array[i] = ((double)bias_LSB)/10;
     }
+    return GS_OK;
 }
 
 
@@ -246,7 +252,9 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     }
 
     //sets the lidar to standard edge mode
-    setedgeMode(GS_STANDARD_EDGE_MODE, GS_LIDAR_GLOBAL_ADDRESS);
+    if(setedgeMode(GS_STANDARD_EDGE_MODE, GS_LIDAR_GLOBAL_ADDRESS) != GS_OK){
+        return GS_NOT_OK;
+    }
 
     //if the number of kidars are not given they are beung founf from the getNumberOfDevices() 
     if(number_of_lidars == 0){
@@ -254,8 +262,15 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     }else{
         setNumberofLiDars(number_of_lidars);
     }
+
+    if(number_of_lidars == 0){
+        return GS_NOT_OK;
+    }
+        
     
-    setThecoefficients();
+    if(setThecoefficients() != GS_OK){
+        return GS_NOT_OK;
+    }
     
     return GS_OK;
 }
@@ -474,16 +489,17 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     return iter_Measurement();
 }
 
-iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
+ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     int recv_pos = 0;
     bool successful_capture = false;
 
     //ensures that the starting bytes are correct
     open_buffer();
+    long start = millis();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
             uint8_t currentByte = YDSerial->read();
-            switch (recv_pos){
+                        switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
                         recv_pos = 0;
@@ -517,19 +533,18 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                     break;
                 case 5:
                     if(currentByte != GS_LIDAR_CMD_SCAN){
-                        return iter_Scan();
+                        return iter_Measurement();
                     }
                     break;
                 case 6:
                     if(currentByte != 0x42){
-                        return iter_Scan();
+                        return iter_Measurement();
                     }
                     break;
                 case 7:
                     if(currentByte != 0x01){
-                        return iter_Scan();
+                        return iter_Measurement();
                     }
-                    successful_capture = true;
                     break;
             }
             if(recv_pos == 7){
@@ -538,6 +553,9 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
             recv_pos++;
         }else{
             pos--;
+            if(millis() - start > 1000){
+                return iter_Scan();
+            }
         }
     }
     if (!successful_capture){

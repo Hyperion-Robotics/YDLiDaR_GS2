@@ -65,7 +65,7 @@ private:
     /**
      * @brief   Get the coefficients of every lidar
      */
-    void setThecoefficients();
+    GS_error setThecoefficients();
 
     /**
      * @brief   Set the baud rate of the lidar to 921600(typical)
