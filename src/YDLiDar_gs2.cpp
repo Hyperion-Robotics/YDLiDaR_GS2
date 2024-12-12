@@ -363,34 +363,34 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
             uint8_t currentByte = YDSerial->read();
-                        switch (recv_pos){
+            switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         pos = -1;
                         continue;
                     }
@@ -412,6 +412,7 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
                     break;
             }
             if(recv_pos == 7){
+                successful_capture = true;
                 break;
             }
             recv_pos++;
@@ -500,34 +501,34 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
             uint8_t currentByte = YDSerial->read();
-                        switch (recv_pos){
+            switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 1:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 2:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         continue;
                     }
                     break; 
                 case 4:
                     if(currentByte != dev_address){
-                        recv_pos = 0;
+                        recv_pos = -1;
                         pos = -1;
                         continue;
                     }
@@ -546,6 +547,7 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                     if(currentByte != 0x01){
                         return iter_Scan();
                     }
+                    successful_capture = true;
                     break;
             }
             if(recv_pos == 7){
@@ -616,6 +618,7 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     }
     return scan;
 }
+
 
 void YDLiDar_GS2::softRestart(){
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_RECV_SOFT_RESET_LENGTH);
