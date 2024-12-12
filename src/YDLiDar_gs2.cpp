@@ -360,10 +360,8 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     bool successful_capture = false;
     //ensures that the starting bytes are correct
     open_buffer();
-    long start = millis();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
-            start = millis();
             uint8_t currentByte = YDSerial->read();
                         switch (recv_pos){
                 case 0:
@@ -419,9 +417,6 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
             recv_pos++;
         }else{
             pos--;
-            if(millis() - start > 5000){
-                return iter_Measurement();
-            }
         }
     }
     if (!successful_capture){
@@ -502,10 +497,8 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
 
     //ensures that the starting bytes are correct
     open_buffer();
-    long start = millis();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
-            start = millis();
             uint8_t currentByte = YDSerial->read();
                         switch (recv_pos){
                 case 0:
@@ -561,9 +554,6 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
             recv_pos++;
         }else{
             pos--;
-            if(millis() - start > 5000){
-                return iter_Scan();
-            }
         }
     }
     if (!successful_capture){
