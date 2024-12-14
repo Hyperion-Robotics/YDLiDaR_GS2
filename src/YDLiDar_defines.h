@@ -90,6 +90,7 @@
 
 //number of distances received per scan cycle
 #define SCANS_PER_CYCLE 160
+#define MAX_SCAN 160
 
 //data analysis utils
 #define LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT 1
