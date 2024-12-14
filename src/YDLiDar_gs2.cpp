@@ -233,11 +233,16 @@ void YDLiDar_GS2::stopScanningFORCE(){
 
 /******************************PUBLIC METHODS******************************/
 GS_error YDLiDar_GS2::initialize(int number_of_lidars){
+    YDSerial->begin(921600);
+    delay(100);
     //reassures that the lidar does not scan
-    stopScanningFORCE();
-
-    stopScanningFORCE();
-
+    while(YDSerial->available()){   
+        stopScanningFORCE();
+        delay(100);
+        close_buffer();
+        YDSerial->begin(921600);
+        delay(100);
+    }
     int set_baudrate_to = baudrate;//save the wanted baudrate
 
     //set the baud rate to 921600
@@ -363,7 +368,7 @@ iter_Measurement YDLiDar_GS2::iter_measurments(uint8_t dev_address){
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
             uint8_t currentByte = YDSerial->read();
-            switch (recv_pos){
+             switch (recv_pos){
                 case 0:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
                         recv_pos = -1;
