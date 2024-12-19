@@ -89,7 +89,7 @@ private:
     /**
      * @brief   Closes and reopens the YDSerial to discard all saved bytes
      */
-    inline void clear_input() const;
+    inline GS_error clear_input() const;
 
     /**
      * @brief   Closes the YDSerial so the buffer to stop receiving bytes and to discard any saved ones
