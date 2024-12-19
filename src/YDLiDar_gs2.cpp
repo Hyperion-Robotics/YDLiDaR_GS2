@@ -164,7 +164,11 @@ GS_error YDLiDar_GS2::setThecoefficients(){
 
 
 void YDLiDar_GS2::setBaudRateToTypical(){
-    clear_input();//reassures that the buffer is empty and that that the serial has started
+    while(clear_input() != GS_OK){//reassures that the buffer is empty and that that the serial has started
+        stopScanningFORCE();
+        delay(100);
+    }
+
     //send to every possible baudrate the command to set the baudrate to typical and then restart it
     for(const auto& pair : baudrates){
         close_buffer();
@@ -200,14 +204,16 @@ inline void YDLiDar_GS2::fixBuffer() const{
     }
 }
 
-inline void YDLiDar_GS2::clear_input() const{
+inline GS_error YDLiDar_GS2::clear_input() const{
     //by stopping and restarting the Serial it clears the buffer
     YDSerial->end();
     YDSerial->begin(baudrate);
 
-    while (YDSerial->available() > 0) {
+    long time = millis();
+    while (YDSerial->available() > 0 && millis() - time < 1000){
         YDSerial->read();
     }
+    return YDSerial->available() == 0 ? GS_OK : GS_NOT_OK;
 }
 
 inline void YDLiDar_GS2::close_buffer() const{
@@ -239,7 +245,6 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     while(YDSerial->available()){   
         stopScanningFORCE();
         delay(100);
-        close_buffer();
         YDSerial->begin(921600);
         delay(100);
     }
@@ -247,6 +252,8 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
 
     //set the baud rate to 921600
     setBaudRateToTypical();
+
+    softRestart();
 
     //check if the desired baudrate exists
     if(set_baudrate_to != baudrates[GS_LIDAR_BAUDRATE_921600]){
@@ -258,11 +265,6 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
         }
     }
 
-    //sets the lidar to standard edge mode
-    if(setedgeMode(GS_STANDARD_EDGE_MODE, GS_LIDAR_GLOBAL_ADDRESS) != GS_OK){
-        return GS_NOT_OK;
-    }
-
     //if the number of kidars are not given they are beung founf from the getNumberOfDevices() 
     if(number_of_lidars == 0){
         this->number_of_lidars = getNumberOfDevices();
@@ -270,7 +272,7 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
         setNumberofLiDars(number_of_lidars);
     }
 
-    if(number_of_lidars == 0){
+    if(this->number_of_lidars == 0){
         return GS_NOT_OK;
     }
         
@@ -628,7 +630,7 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
 void YDLiDar_GS2::softRestart(){
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_RECV_SOFT_RESET_LENGTH);
     YDSerial->flush();
-    delay(500);
+    delay(800);
     clear_input();
 }
 
