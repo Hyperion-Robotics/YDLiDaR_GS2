@@ -213,7 +213,7 @@ inline GS_error YDLiDar_GS2::clear_input() const{
     while (YDSerial->available() > 0 && millis() - time < 1000){
         YDSerial->read();
     }
-    return YDSerial->available() == 0 ? GS_OK : GS_NOT_OK;
+    return (YDSerial->available() == 0) ? GS_OK : GS_NOT_OK;
 }
 
 inline void YDLiDar_GS2::close_buffer() const{
@@ -241,33 +241,51 @@ void YDLiDar_GS2::stopScanningFORCE(){
 GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     YDSerial->begin(921600);
     delay(100);
+
+    int current_bytes = YDSerial->available();
+
+    delay(100);
+    
     //reassures that the lidar does not scan
-    while(YDSerial->available()){   
+    if(YDSerial->available() - current_bytes > 0){   
         stopScanningFORCE();
-        delay(100);
-        YDSerial->begin(921600);
-        delay(100);
+    }else{
+        close_buffer();
     }
+    delay(100);
     int set_baudrate_to = baudrate;//save the wanted baudrate
 
     //set the baud rate to 921600
     setBaudRateToTypical();
 
     softRestart();
-
+    
+    int responces = 0;
     //check if the desired baudrate exists
     if(set_baudrate_to != baudrates[GS_LIDAR_BAUDRATE_921600]){
         for(const auto& pair : baudrates){
             if(pair.second == set_baudrate_to){
                 setBaudrate(pair.first);
+                delay(800);
+                current_bytes = YDSerial->available();
+                if(YDSerial->available()%10 != 0){
+                    fixBuffer();
+                }
+                if(YDSerial->available()%10 != 0){
+                    return GS_NOT_OK;
+                }
+                responces = (int)(YDSerial->available()/10);
+                softRestart();
                 break;
             }
+
         }
     }
 
+
     //if the number of kidars are not given they are beung founf from the getNumberOfDevices() 
     if(number_of_lidars == 0){
-        this->number_of_lidars = getNumberOfDevices();
+        this->number_of_lidars = responces;
     }else{
         setNumberofLiDars(number_of_lidars);
     }
@@ -275,11 +293,12 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     if(this->number_of_lidars == 0){
         return GS_NOT_OK;
     }
-        
-    delay(200);
     
-    if(setThecoefficients() != GS_OK){
-        return GS_NOT_OK;
+    unsigned long start = millis();
+    while(setThecoefficients() != GS_OK){
+        if(millis() - start > 3000){
+            return GS_NOT_OK;
+        }
     }
     
     return GS_OK;
