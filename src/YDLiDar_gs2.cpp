@@ -173,20 +173,19 @@ void YDLiDar_GS2::setBaudRateToTypical(){
     for(const auto& pair : baudrates){
         close_buffer();
         YDSerial->begin(pair.second);
-        delay(100);
+        delay(60);
 
         uint8_t byte_to_send = GS_LIDAR_BAUDRATE_921600;
         sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_SET_BAUDRATE, &byte_to_send, GS_LIDAR_RECV_SET_BAUDRATE_LENGTH);
         YDSerial->flush();
-        delay(800);
         softRestart();
         YDSerial->flush();
     }
     close_buffer();
-    delay(100);
+    delay(10);
     baudrate = 921600;
     YDSerial->begin(921600);
-    delay(100);
+    delay(10);
 }
 
 inline uint16_t YDLiDar_GS2::MSB_LSBtoUINT16(uint8_t MSB, uint8_t LSB) const{
@@ -244,7 +243,7 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
 
     int current_bytes = YDSerial->available();
 
-    delay(100);
+    delay(10);
     
     //reassures that the lidar does not scan
     if(YDSerial->available() - current_bytes > 0){   
@@ -252,13 +251,11 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     }else{
         close_buffer();
     }
-    delay(100);
+    delay(10);
     int set_baudrate_to = baudrate;//save the wanted baudrate
 
     //set the baud rate to 921600
     setBaudRateToTypical();
-
-    softRestart();
     
     int responces = 0;
     //check if the desired baudrate exists
@@ -266,7 +263,14 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
         for(const auto& pair : baudrates){
             if(pair.second == set_baudrate_to){
                 setBaudrate(pair.first);
-                delay(800);
+                long start = millis();
+                while ((YDSerial->available() < (GS_LIDAR_STANDAR_LENGTH + GS_LIDAR_RECV_SET_BAUDRATE_LENGTH)) && (millis() - start < 1200)){
+                    //pass
+                }
+                if(millis() - start > 1200){
+                    return GS_NOT_OK;
+                }
+                
                 current_bytes = YDSerial->available();
                 if(YDSerial->available()%10 != 0){
                     fixBuffer();
@@ -649,7 +653,6 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
 void YDLiDar_GS2::softRestart(){
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_RECV_SOFT_RESET_LENGTH);
     YDSerial->flush();
-    delay(800);
     clear_input();
 }
 
