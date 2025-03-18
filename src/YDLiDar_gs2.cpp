@@ -120,8 +120,8 @@ void YDLiDar_GS2::getMeasurements(uint16_t dist, int n, double *dstTheta, uint16
 }
 
 GS_error YDLiDar_GS2::setThecoefficients(){
-    clear_input();//reassures that the buffer is empty and that that the serial has started
     sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_GET_PARAMETERS);
+    delay(500);
     fixBuffer();
     
     //wait until the buffer gets all the bytes responce 
@@ -130,18 +130,60 @@ GS_error YDLiDar_GS2::setThecoefficients(){
     }
     
     if(YDSerial->available() < GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH){
+        // Serial.println("TIME OUT");
         return GS_NOT_OK;
     }
-
+    
     uint8_t captured[GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH];//store the message
-
+    
     YDSerial->readBytes(captured, (GS_LIDAR_STANDAR_LENGTH + number_of_lidars*GS_LIDAR_RECV_PARAMETERS_LENGTH));
-
+    
     for(int i = 0; i < 4; i++){
         if(captured[i] != GS_LIDAR_HEADER_BYTE){
             return GS_NOT_OK;
         }
     }
+    
+    // Serial.print("Header");
+    // Serial.println(captured[0], HEX);
+    // Serial.print("Header");
+    // Serial.println(captured[1], HEX);
+    // Serial.print("Header");
+    // Serial.println(captured[2], HEX);
+    // Serial.print("Header");
+    // Serial.println(captured[3], HEX);
+    // Serial.print("dev");
+    // Serial.println(captured[4], HEX);
+    // Serial.print("type");
+    // Serial.println(captured[5], HEX);
+    // Serial.print("lenLSB");
+    // Serial.println(captured[6], HEX);
+    // Serial.print("lenMSB");
+    // Serial.println(captured[7], HEX);
+    // Serial.print("K0LSB");
+    // Serial.println(captured[8], HEX);
+    // Serial.print("K0MSB");
+    // Serial.println(captured[9], HEX);
+    // Serial.print("B0LSB");
+    // Serial.println(captured[10], HEX);
+    // Serial.print("B0MSB");
+    // Serial.println(captured[11], HEX);
+    // Serial.print("K1LSB");
+    // Serial.println(captured[12], HEX);
+    // Serial.print("K1MSB");
+    // Serial.println(captured[13], HEX);
+    // Serial.print("B1LSB");
+    // Serial.println(captured[14], HEX);
+    // Serial.print("B1MSB");
+    // Serial.println(captured[15], HEX);
+    // Serial.print("bias");
+    // Serial.println(captured[16], HEX);
+    
+   
+    if(captured[5] != 0x61) return GS_NOT_OK;//Command type
+    if(captured[6] != 0x09) return GS_NOT_OK;//Data length LSB
+    if(captured[7] != 0x00) return GS_NOT_OK;//Data length MSB
+
     for(int i = 0; i<number_of_lidars; i++){
         uint8_t k0_LSB = captured[8 + i*GS_LIDAR_RECV_PARAMETERS_LENGTH];
         uint8_t k0_MSB = captured[9 + i*GS_LIDAR_RECV_PARAMETERS_LENGTH];
@@ -153,12 +195,15 @@ GS_error YDLiDar_GS2::setThecoefficients(){
         uint8_t b1_MSB = captured[15 + i*GS_LIDAR_RECV_PARAMETERS_LENGTH];
         uint8_t bias_LSB = captured[16 + i*GS_LIDAR_RECV_PARAMETERS_LENGTH];
 
-        d_compensateK0_aray[i] = ((double)MSB_LSBtoUINT16(k0_MSB, k0_LSB))/10000.0f;
-        d_compensateK1_aray[i] = ((double)MSB_LSBtoUINT16(k1_MSB, k1_LSB))/10000.0f;
-        d_compensateB0_aray[i] = ((double)MSB_LSBtoUINT16(b0_MSB, b0_LSB))/10000.0f;
-        d_compensateB1_aray[i] = ((double)MSB_LSBtoUINT16(b1_MSB, b1_LSB))/10000.0f;
-        bias_array[i] = ((double)bias_LSB)/10;
+        d_compensateK0_aray[i] = (MSB_LSBtoUINT16(k0_MSB, k0_LSB))/10000.0f;
+        d_compensateK1_aray[i] = (MSB_LSBtoUINT16(k1_MSB, k1_LSB))/10000.0f;
+        d_compensateB0_aray[i] = (MSB_LSBtoUINT16(b0_MSB, b0_LSB))/10000.0f;
+        d_compensateB1_aray[i] = (MSB_LSBtoUINT16(b1_MSB, b1_LSB))/10000.0f;
+        bias_array[i] = (bias_LSB)/10;
     }
+
+    YDSerial->read();//Checkbyte
+
     return GS_OK;
 }
 
@@ -226,13 +271,14 @@ inline void YDLiDar_GS2::open_buffer() const{
 void YDLiDar_GS2::stopScanningFORCE(){
     //send to all possible baud rates to stop scanning
     for(const auto& pair : baudrates){
-        close_buffer();
         YDSerial->begin(pair.second);
-
+        delay(100);
         sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_STOP_SCAN);
         YDSerial->flush();
+        sendCommand(GS_LIDAR_GLOBAL_ADDRESS, GS_LIDAR_CMD_STOP_SCAN);
+        YDSerial->flush();
+        close_buffer();
     }
-    close_buffer();
 }
 /******************************PRIVATE METHODS******************************/
 
@@ -257,8 +303,8 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
     //set the baud rate to 921600
     setBaudRateToTypical();
     
-    int responces = 0;
     //check if the desired baudrate exists
+    int responces  = 0;
     if(set_baudrate_to != baudrates[GS_LIDAR_BAUDRATE_921600]){
         for(const auto& pair : baudrates){
             if(pair.second == set_baudrate_to){
@@ -296,6 +342,11 @@ GS_error YDLiDar_GS2::initialize(int number_of_lidars){
 
     if(this->number_of_lidars == 0){
         return GS_NOT_OK;
+    }
+
+
+    while(YDSerial->available() > 0){
+        YDSerial->read();
     }
     
     unsigned long start = millis();
@@ -526,6 +577,11 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     int recv_pos = 0;
     bool successful_capture = false;
 
+    uint8_t check_sum;
+    uint16_t sample_lens;
+
+    float inc_origin_angle = (float)360.0 / 160;
+
     //ensures that the starting bytes are correct
     open_buffer();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
@@ -562,22 +618,28 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                         pos = -1;
                         continue;
                     }
+                    check_sum = currentByte;
                     break;
                 case 5:
                     if(currentByte != GS_LIDAR_CMD_SCAN){
                         return iter_Scan();
                     }
                     break;
+                    check_sum += currentByte;
                 case 6:
                     if(currentByte != 0x42){
                         return iter_Scan();
                     }
+                    sample_lens |= 0x00ff & currentByte;
+                    check_sum += currentByte;
                     break;
                 case 7:
                     if(currentByte != 0x01){
                         return iter_Scan();
                     }
                     successful_capture = true;
+                    sample_lens |= (0x00ff & currentByte) << 8;
+                    check_sum += currentByte;
                     break;
             }
             if(recv_pos == 7){
@@ -606,45 +668,47 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
 
     scan.env = MSB_LSBtoUINT16(captured[0], captured[1]);
 
-    for(int i=2; i <= GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*2; i += 2){
+    for(int i=0; i < SCANS_PER_CYCLE*2; i += 2){
         //locator
-        int n = (i/2 - 1);
+        int n = (i/2);
         
-        uint16_t angle_q6_checkbit;
+        uint16_t sampleAngle = 0;
         scan.valid[n] = true;
         //distance and angle correction
-        getMeasurements(MSB_LSBtoUINT16(captured[i+1], captured[i]) & 0x01ff, n, &scan.angle[n], &scan.distance[n], dev_address);
+        getMeasurements((MSB_LSBtoUINT16(captured[(i+1)+2], captured[i+2]) & 0x01ff), n, &scan.angle[n], &scan.distance[n], dev_address);
 
 
-        scan.quality[n] = (captured[i+1] >> 1);
+        scan.quality[n] = (captured[(i+1)+2] >> 1);
 
         //filter for incorect captures
         if(scan.angle[n] < 0){
-            angle_q6_checkbit = (((uint16_t)(scan.angle[n] * 64 + 23040)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
+            sampleAngle = (((uint16_t)(scan.angle[n] * 64 + 23040)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
         }else{
             if ((scan.angle[n] * 64) > 23040) {
-                angle_q6_checkbit = (((uint16_t)(scan.angle[n] * 64 - 23040)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
+                sampleAngle = (((uint16_t)(scan.angle[n]* 64 - 23040)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
             } else {
-                angle_q6_checkbit = (((uint16_t)(scan.angle[n] * 64)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
+                sampleAngle = (((uint16_t)(scan.angle[n] * 64)) << LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) + LIDAR_RESP_MEASUREMENT_CHECKBIT;
             }
         }
         
         if(n < 80){
-            if(angle_q6_checkbit <= 23041){
+            if(sampleAngle <= 23041){
                 scan.distance[n] = 0;
                 scan.valid[n] = false;
             }
         }else {
-            if(angle_q6_checkbit > 23041){
+            if(sampleAngle > 23041){
                 scan.distance[n] = 0;
                 scan.valid[n] = false;
             }
         }
 
-        if((scan.distance[n] < 25 || scan.distance[n] > 300) && scan.valid[n] == true){
-            scan.distance[n] = 0;
-            scan.valid[n] = false;
-        }
+        scan.angle[n] = (sampleAngle >> LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
+
+        // if((scan.distance[n] < 25 || scan.distance[n] > 300 || (55 < scan.angle[n] && scan.angle[n] < 305) ) && scan.valid[n] == true){
+        //     // scan.distance[n] = 0;
+        //     scan.valid[n] = false;
+        // }
     }
     return scan;
 }
