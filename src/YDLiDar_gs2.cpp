@@ -577,36 +577,22 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
     int recv_pos = 0;
     bool successful_capture = false;
 
-    uint8_t check_sum;
-    uint16_t sample_lens;
+    uint8_t check_sum = 0x00;
+    uint16_t sample_lens = 0x0000;
+    
+    uint8_t captured[GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*GS_SI_MEASUREMENT_LENGTH + GS_LIDAR_CHECK_CODE_LENGTH];
 
     float inc_origin_angle = (float)360.0 / 160;
 
     //ensures that the starting bytes are correct
     open_buffer();
+    unsigned long start = millis();
     for(int pos = 0; pos < (BYTES_PER_SCAN + 1); pos++){
         if(YDSerial->available()){
+            start = millis();
             uint8_t currentByte = YDSerial->read();
             switch (recv_pos){
-                case 0:
-                    if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
-                        continue;
-                    }
-                    break; 
-                case 1:
-                    if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
-                        continue;
-                    }
-                    break; 
-                case 2:
-                    if(currentByte != GS_LIDAR_HEADER_BYTE){
-                        recv_pos = -1;
-                        continue;
-                    }
-                    break; 
-                case 3:
+                case 0: case 1: case 2: case 3:
                     if(currentByte != GS_LIDAR_HEADER_BYTE){
                         recv_pos = -1;
                         continue;
@@ -618,28 +604,28 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
                         pos = -1;
                         continue;
                     }
-                    check_sum = currentByte;
+                    // check_sum = (check_sum + currentByte) & 0xFF;
                     break;
                 case 5:
                     if(currentByte != GS_LIDAR_CMD_SCAN){
                         return iter_Scan();
                     }
                     break;
-                    check_sum += currentByte;
+                    // check_sum = (check_sum + currentByte) & 0xFF;
                 case 6:
                     if(currentByte != 0x42){
                         return iter_Scan();
                     }
-                    sample_lens |= 0x00ff & currentByte;
-                    check_sum += currentByte;
+                    // sample_lens |= 0x00ff & currentByte;
+                    // check_sum = (check_sum + currentByte) & 0xFF;
                     break;
                 case 7:
                     if(currentByte != 0x01){
                         return iter_Scan();
                     }
                     successful_capture = true;
-                    sample_lens |= (0x00ff & currentByte) << 8;
-                    check_sum += currentByte;
+                    // sample_lens |= (0x00ff & currentByte) << 8;
+                    // check_sum = (check_sum + currentByte) & 0xFF;
                     break;
             }
             if(recv_pos == 7){
@@ -647,21 +633,27 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
             }
             recv_pos++;
         }else{
+            if(millis() - start > 100){
+                return iter_Scan();
+            }
             pos--;
         }
+        
     }
     if (!successful_capture){
         return iter_Scan();
     }
 
     recv_pos = 0;
-    uint8_t captured[GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*GS_SI_MEASUREMENT_LENGTH];
-    while (recv_pos < GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*GS_SI_MEASUREMENT_LENGTH){
-        if(YDSerial->available()){
-            captured[recv_pos] = YDSerial->read();
-            recv_pos++;
+    start = millis();
+    while ((recv_pos < GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*GS_SI_MEASUREMENT_LENGTH + GS_LIDAR_CHECK_CODE_LENGTH)){
+        recv_pos += YDSerial->readBytes(captured + recv_pos, GS_ENV_MEASUREMENT_LENGTH + SCANS_PER_CYCLE*GS_SI_MEASUREMENT_LENGTH + GS_LIDAR_CHECK_CODE_LENGTH - recv_pos);
+        if(millis() - start > 100){
+            return iter_Scan();
         }
     }    
+    // recv_pos--;
+    // Serial.printf("Check sum calculated: %x, actual: %x, loss: %x\n", check_sum, captured[recv_pos], (check_sum - captured[recv_pos]));
     close_buffer();
     
     iter_Scan scan;
@@ -676,7 +668,6 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
         scan.valid[n] = true;
         //distance and angle correction
         getMeasurements((MSB_LSBtoUINT16(captured[(i+1)+2], captured[i+2]) & 0x01ff), n, &scan.angle[n], &scan.distance[n], dev_address);
-
 
         scan.quality[n] = (captured[(i+1)+2] >> 1);
 
@@ -705,11 +696,12 @@ iter_Scan YDLiDar_GS2::iter_scans(uint8_t dev_address){
 
         scan.angle[n] = (sampleAngle >> LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
 
-        // if((scan.distance[n] < 25 || scan.distance[n] > 300 || (55 < scan.angle[n] && scan.angle[n] < 305) ) && scan.valid[n] == true){
-        //     // scan.distance[n] = 0;
-        //     scan.valid[n] = false;
-        // }
+        if((scan.distance[n] < 25 || scan.distance[n] > 300 || (55 < scan.angle[n] && scan.angle[n] < 305) ) && scan.valid[n] == true){
+            scan.distance[n] = 0;
+            scan.valid[n] = false;
+        }
     }
+
     return scan;
 }
 
