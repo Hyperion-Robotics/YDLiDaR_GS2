@@ -196,6 +196,7 @@ ATTENTION:
     start OTA: delay 800ms
 
 DATA ANALYSIS:
+``` cpp
     angle_p_x = 1.22
     angle_p_angle = 22.5
     M_PI = π
@@ -252,6 +253,7 @@ DATA ANALYSIS:
     }
     *dstTheta = theta;
     *dstDist = Dist;
+```
 ```
 
 
