@@ -1,18 +1,12 @@
 #ifndef YDLIDAR_H 
 #define YDLIDAR_H
 
-#ifdef ARDUINO_AVR_UNO
-#error this library doesnt support Uno board due to the <map> library. Will be fixed soon
-#endif
-
 #include <Arduino.h>
 #include <math.h>
 #ifndef ARDUINO//just so vscod doesnt pop errors i will remove it soon i just cant stand red lines everywhere i make a uint
 #include <cstdint>
 #endif
 
-#include <map>
-#include <cmath>
 
 #include "YDLiDar_defines.h"
 #include "YDLiDar_structs.h"    
