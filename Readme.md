@@ -1,7 +1,7 @@
-# YDLiDar_gs2 Library for GS2 Static LiDAR
+# YDLiDar_GS2 Library for GS2 Static LiDAR
 
 ## OVERVIEW
-The `YDLiDar_gs2` library provides an easy-to-use interface for integrating the YDLiDar GS2 Static LiDAR with Arduino-compatible platforms. It allows users to easily configure and control the GS2 LiDAR, enabling real-time distance measurement, scanning, and data retrieval. The library supports multiple connected LiDAR devices, offering flexible options for baud rate configuration, edge mode settings, and calibration. With built-in error handling, it ensures smooth communication with the LiDAR, providing developers with precise and reliable measurements for applications in robotics, automation, and mapping. This library abstracts complex communication protocols and device-specific settings, making it simple for users to integrate and utilize the GS2 LiDAR in their projects.
+The `YDLiDar_GS2` library provides an easy-to-use interface for integrating the YDLiDar GS2 Static LiDAR with Arduino-compatible platforms. It allows users to easily configure and control the GS2 LiDAR, enabling real-time distance measurement, scanning, and data retrieval. The library supports multiple connected LiDAR devices, offering flexible options for baud rate configuration, edge mode settings, and calibration. With built-in error handling, it ensures smooth communication with the LiDAR, providing developers with precise and reliable measurements for applications in robotics, automation, and mapping. This library abstracts complex communication protocols and device-specific settings, making it simple for users to integrate and utilize the GS2 LiDAR in their projects.
 
 ## Table of Contents
 - [Features](#features)
@@ -30,16 +30,16 @@ The `YDLiDar_gs2` library provides an easy-to-use interface for integrating the 
 ## Getting Started
 
 ### Hardware Setup
-Connect each GS2 LiDAR’s TX and RX to the designated serial port on your microcontroller.
+Connect each GS2 LiDAR's TX and RX to the designated serial port on your microcontroller.
 
 ### Basic Usage
 
-1. **Initialize the YDLiDar_gs2 Object**
+1. **Initialize the YDLiDar_GS2 Object**
     ```cpp
     #include "YDLiDar_gs2.h"
 
     HardwareSerial* YDSerial = &Serial1; // Choose the serial port
-    YDLiDar_gs2 lidar(YDSerial, GS_LIDAR_BAUDRATE_921600);
+    YDLiDar_GS2 lidar(YDSerial, GS_LIDAR_BAUDRATE_921600);
     ```
 
 2. **Initialize the LiDAR**
@@ -49,8 +49,13 @@ Connect each GS2 LiDAR’s TX and RX to the designated serial port on your micro
         // Initialization successful
     } else {
         // Handle initialization error
+        // If the LiDAR is already scanning, stop scanning first
+        lidar.stopScanning();
+        status = lidar.initialize(); // Try initialization again
     }
     ```
+
+    > **IMPORTANT**: If the LiDAR is already scanning, the `initialize()` function will return `GS_NOT_OK`. Always make sure to stop scanning with `stopScanning()` before attempting to re-initialize.
 
 3. **Start Scanning**
     ```cpp
@@ -60,18 +65,18 @@ Connect each GS2 LiDAR’s TX and RX to the designated serial port on your micro
     ```
 
 4. **Retrieve:**
-- A Single Measurement:
+- A Single Device Scan:
     ```cpp
-    iter_Measurement measurement = lidar.iter_measurments();
-    if (measurement.valid) {
+    iter_Scan scan = lidar.iter_scans();
+    if (scan.valid[n]) {
         // Access angle, distance, quality, etc.
     }
     ```
-- Multiple Measurements:
+- Multiple Device Scans:
     ```cpp
-    iter_Scan scan = lidar.iter_scans();
-    if (measurement.valid) {
-        // Access angle, distance, quality, etc.
+    iter_multi_Scans scans = lidar.iter_multi_Scan();
+    if (scans.valid1[n]) {
+        // Access angle, distance, quality from first LiDAR
     }
     ```
 
@@ -89,7 +94,7 @@ Connect each GS2 LiDAR’s TX and RX to the designated serial port on your micro
 
 - **Set Edge Mode**:
     ```cpp
-    lidar.setedgeMode(EDGE_MODE_STANDARD, 0x01); // Set edge mode for specific LiDAR
+    lidar.setedgeMode(GS_STANDARD_EDGE_MODE, 0x01); // Set edge mode for specific LiDAR
     ```
 
 ## Functions
@@ -101,8 +106,8 @@ Connect each GS2 LiDAR’s TX and RX to the designated serial port on your micro
 | `initialize()`         | Sets up communication between the LiDAR and the microcontroller.         |
 | `startScanning()`      | Begins scanning on the connected LiDARs.                                 |
 | `stopScanning()`       | Stops scanning on the connected LiDARs.                                  |
-| `iter_measurments()`   | Retrieves a single measurement (angle, distance, quality).               |
-| `iter_scans()`         | Retrieves all measurements from the most recent scan.                    |
+| `iter_scans()`         | Retrieves all measurements from a single LiDAR device.                   |
+| `iter_multi_Scan()`    | Retrieves measurements from all connected LiDAR devices.                 |
 | `setBaudrate(uint8_t)` | Sets the baud rate for serial communication.                             |
 | `setNumberofLiDars(int)` | Specifies the number of connected LiDAR devices.                       |
 
@@ -112,7 +117,7 @@ Connect each GS2 LiDAR’s TX and RX to the designated serial port on your micro
 |---------------------|-------------------------------------------------------|
 | `getParametes()`    | Retrieves calibration coefficients for a specific LiDAR. |
 | `getVersion()`      | Retrieves version information for the connected LiDARs. |
-| `getNumberOfDevices()` | Returns the count of connected LiDAR devices.     |
+| `ping()`            | Returns the address of the connected LiDAR devices.    |
 | `softRestart()`     | Soft-restarts the connected LiDAR(s).                  |
 
 ## Error Codes
@@ -125,6 +130,7 @@ The library provides specific error codes for debugging:
 ## Notes
 - **HardwareSerial Dependency**: The library requires `HardwareSerial` for communication. Ensure the specified serial port is exclusive to the LiDAR.
 - **Arduino UNO Limitation**: The library is currently incompatible with the Arduino UNO due to limitations with `<map>`.
+- **Initialization and Scanning**: The LiDAR cannot be initialized while it's scanning. If `initialize()` returns `GS_NOT_OK`, first call `stopScanning()` and then try to initialize again. Scanning blocks the initialization process because the GS2 cannot process other commands while in scan mode except for the stop command.
 
 ## References
 ### Datasheets:
@@ -235,7 +241,6 @@ DATA ANALYSIS:
     tempTheta = atan(d_compensateK1 * pixelU - d_compensateB1) * 180 / M_PI;
     }
     tempDist = (dist - angle_p_x) / cos((angle_p_angle + bias + (tempTheta)) * M_PI / 180);
-    Copyright 2021 EAI All Rights Reserved 11 / 18
     tempTheta = tempTheta * M_PI / 180;
     tempX = cos(-(angle_p_angle + bias) * M_PI / 180) * tempDist * cos(tempTheta) + sin(-
     (angle_p_angle + bias) * M_PI / 180) * (tempDist * sin(tempTheta));
@@ -266,4 +271,5 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+The author of this software shall not be held liable for any damages, liabilities, or legal consequences arising from the use, misuse, or inability to use the software.
 The author of this software shall not be held liable for any damages, liabilities, or legal consequences arising from the use, misuse, or inability to use the software.
